@@ -1,7 +1,18 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   get_next_line.c                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jmunoz <marvin@42.fr>                      +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2016/03/21 18:33:26 by jmunoz            #+#    #+#             */
+/*   Updated: 2016/03/21 18:46:20 by jmunoz           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
 #include "get_next_line.h"
 
-int		ft_strrlen(char *str, char c)
+int				ft_strrlen(char *str, char c)
 {
 	int	i;
 
@@ -11,9 +22,9 @@ int		ft_strrlen(char *str, char c)
 	return (i);
 }
 
-char	*ft_concatenate(char *s1, char *s2)
+char			*ft_concatenate(char *s1, char *s2)
 {
-	char	*s3;
+	char		*s3;
 	size_t		size;
 
 	s3 = NULL;
@@ -29,17 +40,44 @@ char	*ft_concatenate(char *s1, char *s2)
 	return (s3);
 }
 
-int		get_next_line(int fd, char **line)
+static t_gnl	*find_fd(t_gnl **begin_list, int fd)
 {
-	static t_gnl	gnl;
+	if (*begin_list == NULL)
+	{
+		*begin_list = (t_gnl*)ft_memalloc(sizeof(t_gnl));
+		(*begin_list)->fd = fd;
+		return (*begin_list);
+	}
+	else if ((*begin_list)->next == NULL)
+	{
+		if ((*begin_list)->fd == fd)
+			return (*begin_list);
+		(*begin_list)->next = (t_gnl*)ft_memalloc(sizeof(t_gnl));
+		(*begin_list)->next->fd = fd;
+		return ((*begin_list)->next);
+	}
+	else
+	{
+		if ((*begin_list)->fd == fd)
+			return (*begin_list);
+		return (find_fd(&(*begin_list)->next, fd));
+	}
+	return (*begin_list);
+}
+
+int				get_next_line(int fd, char **line)
+{
+	static t_gnl	*begin = NULL;
+	t_gnl			*gnl;
 	int				size;
-	
+
+	gnl = find_fd(&begin, fd);
 	*line = ft_strnew(0);
 	if (!POS || (POS == RET))
 	{
 		POS = 0;
 		if ((RET = read(fd, BUFF, BUFF_SIZE)) <= 0)
-				return (RET);
+			return (RET);
 		BUFF[RET] = '\0';
 	}
 	while ((size = ft_strrlen(&BUFF[POS], '\n')) == RET - POS && RET)
@@ -50,6 +88,6 @@ int		get_next_line(int fd, char **line)
 		BUFF[RET] = '\0';
 	}
 	*line = ft_concatenate(*line, &BUFF[POS]);
-	POS = (RET == BUFF_SIZE || size < RET ) ? POS + size + 1 : 0;
+	POS = (RET == BUFF_SIZE || size < RET) ? POS + size + 1 : 0;
 	return (1);
 }
